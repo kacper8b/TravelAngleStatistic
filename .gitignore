@@ -1,0 +1,6 @@
+data/input/*
+!data/input/.gitkeep
+/measurements/
+data/measurements/*
+!data/measurements/.gitkeep
+__pycache__/
