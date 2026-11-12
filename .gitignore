@@ -3,4 +3,6 @@ data/input/*
 /measurements/
 data/measurements/*
 !data/measurements/.gitkeep
+data/log/*
+!data/log/.gitkeep
 __pycache__/
