@@ -6,3 +6,5 @@ data/measurements/*
 data/log/*
 !data/log/.gitkeep
 __pycache__/
+data/statistics_generated.xlsx
+data/statistics_state.json
