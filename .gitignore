@@ -6,5 +6,8 @@ data/measurements/*
 data/log/*
 !data/log/.gitkeep
 __pycache__/
-data/statistics_generated.xlsx
-data/statistics_state.json
+data/statistics/statistics_generated.xlsx
+data/statistics/statistics_state.json
+data/statistics/create_statistics.py
+data/statistics/requirements.txt
+data/statistics/travel_angle_statistics/

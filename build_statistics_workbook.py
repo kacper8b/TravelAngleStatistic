@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import shutil
 from pathlib import Path
 
 import win32com.client as win32
@@ -11,6 +12,30 @@ XL_OPEN_XML_MACRO_ENABLED = 52
 
 def _load_module_code(module_path: Path) -> str:
     return module_path.read_text(encoding="utf-8")
+
+
+def _copy_runtime_for_portable_folder(
+    source_root: Path,
+    workbook_path: Path,
+    script_cell_value: str,
+) -> None:
+    script_path = Path(script_cell_value)
+    if script_path.is_absolute():
+        runtime_script_path = script_path
+    else:
+        runtime_script_path = workbook_path.parent / script_path
+
+    runtime_script_path.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source_root / "create_statistics.py", runtime_script_path)
+
+    runtime_package_path = runtime_script_path.parent / "travel_angle_statistics"
+    shutil.copytree(
+        source_root / "travel_angle_statistics",
+        runtime_package_path,
+        dirs_exist_ok=True,
+        ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+    )
+    shutil.copy2(source_root / "requirements.txt", runtime_script_path.parent / "requirements.txt")
 
 
 def _create_data_sources_layout(sheet, script_path: str, state_path: str, generated_path: str) -> None:
@@ -48,7 +73,7 @@ def _create_data_sources_layout(sheet, script_path: str, state_path: str, genera
     add_action_shape(760, 58, 110, 28, "Refresh", "RefreshSourcesButton")
 
 
-def build_workbook(output_path: Path, script_path: Path, state_path: Path, generated_path: Path) -> None:
+def build_workbook(output_path: Path, script_path: str, state_path: str, generated_path: str) -> None:
     module_path = Path(__file__).resolve().parent / "excel_vba" / "statistics_ui.bas"
     module_code = _load_module_code(module_path)
 
@@ -70,9 +95,9 @@ def build_workbook(output_path: Path, script_path: Path, state_path: Path, gener
         data_sheet = workbook.Worksheets.Item(1)
         _create_data_sources_layout(
             data_sheet,
-            script_path=str(script_path),
-            state_path=str(state_path),
-            generated_path=str(generated_path),
+            script_path=script_path,
+            state_path=state_path,
+            generated_path=generated_path,
         )
 
         workbook.Worksheets.Item(2).Name = "Movement angle"
@@ -107,7 +132,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Build macro-enabled statistics workbook template.")
     parser.add_argument(
         "--output",
-        default="data/statistics.xlsm",
+        default="data/statistics/statistics.xlsm",
         help="Path to output .xlsm workbook.",
     )
     parser.add_argument(
@@ -117,27 +142,50 @@ def main() -> int:
     )
     parser.add_argument(
         "--state",
-        default="data/statistics_state.json",
+        default="statistics_state.json",
         help="Path to state file used by workbook macros.",
     )
     parser.add_argument(
         "--generated",
-        default="data/statistics_generated.xlsx",
+        default="statistics_generated.xlsx",
         help="Path to generated analysis workbook used by workbook macros.",
+    )
+    parser.add_argument(
+        "--copy-runtime",
+        action="store_true",
+        default=True,
+        help=(
+            "Copy runtime Python files (create_statistics.py, travel_angle_statistics, requirements.txt) "
+            "next to the workbook so the entire statistics folder is portable."
+        ),
+    )
+    parser.add_argument(
+        "--no-copy-runtime",
+        action="store_false",
+        dest="copy_runtime",
+        help="Do not copy runtime Python files into the workbook folder.",
     )
     args = parser.parse_args()
 
     base_dir = Path(__file__).resolve().parent
-    output_path = (base_dir / args.output).resolve()
-    script_path = (base_dir / args.script).resolve()
-    state_path = (base_dir / args.state).resolve()
-    generated_path = (base_dir / args.generated).resolve()
+    output_path = Path(args.output)
+    if not output_path.is_absolute():
+        output_path = (base_dir / output_path).resolve()
+    else:
+        output_path = output_path.resolve()
+
+    if args.copy_runtime:
+        _copy_runtime_for_portable_folder(
+            source_root=base_dir,
+            workbook_path=output_path,
+            script_cell_value=args.script,
+        )
 
     build_workbook(
         output_path=output_path,
-        script_path=script_path,
-        state_path=state_path,
-        generated_path=generated_path,
+        script_path=args.script,
+        state_path=args.state,
+        generated_path=args.generated,
     )
     print(f"Workbook created: {output_path}")
     return 0

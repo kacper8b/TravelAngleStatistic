@@ -147,12 +147,12 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--workbook",
-        default="data/statistics_generated.xlsx",
+        default="statistics_generated.xlsx",
         help="Path to output workbook (.xlsx or .xlsm).",
     )
     parser.add_argument(
         "--state",
-        default="data/statistics_state.json",
+        default="statistics_state.json",
         help="Path to JSON file storing active CSV sources and refresh metadata.",
     )
 
